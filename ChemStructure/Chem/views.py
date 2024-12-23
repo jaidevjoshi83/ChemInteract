@@ -137,8 +137,13 @@ def save_image(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
-def documents(request):
-    return render(request, 'Chem/uc-weather.html', {})
+def protein_viewer(request):
+    return render(request, 'Chem/protein.html', {})
+
+
+def download_protein_structure(request):
+    return render(request, 'Chem/protein.html', {})
+
 
 
 

@@ -257,3 +257,11 @@ ext.addEventListener('click', ()=>{
 
     })
 })
+
+
+// var protein_button = document.querySelector('#protein-Viewer').addEventListener('click', ()=>{
+
+//     console.log("OK")
+
+//     // window.open("{% url 'protein_viewer' %}", "_blank");
+// })

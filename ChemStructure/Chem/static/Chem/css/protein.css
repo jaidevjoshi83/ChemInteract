@@ -1,0 +1,31 @@
+
+
+#dropdownMenu {
+    height: 600px; /* Set the desired height */
+    width: 100%; /* Optional: set width */
+    overflow-y: auto; /* Enables vertical scrolling */
+    overflow-x: hidden; /* Disables horizontal scrolling */
+    border: 1px solid #ccc; /* Optional: add a border for visibility */
+    padding: 10px; /* Optional: add padding for content spacing */
+}
+
+.residue-dropdown {
+    
+    margin-left: 20px;
+    
+}
+.name {
+    margin: 5px;
+    
+}
+.residue-number {
+    margin: 5px;
+}
+.InnerDiv{
+    display: none;
+}
+
+.chain-name {
+    margin-left: 30px;
+    
+}
