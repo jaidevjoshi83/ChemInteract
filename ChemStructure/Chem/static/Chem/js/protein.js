@@ -1,93 +1,88 @@
+let NewView  = null
+let edit 
+
+
 document.addEventListener('DOMContentLoaded', function () {
     let element = document.querySelector('#container-01');
     if (element) {
         let config = { backgroundColor: 'white' };
         let viewer = $3Dmol.createViewer(element, config);
 
-        // Function to fetch protein data from PDB
-        const fetchProtein = async (pdbId) => {
-            try {
-                const url = `https://files.rcsb.org/download/${pdbId}.pdb`;
-                const response = await fetch(url);
+        loadFile()
+        loadPDBQuery()
 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch PDB file for ${pdbId}`);
-                }
+        const clean_pdbdata = ''
 
-                const pdbData = await response.text();
-                const clean_pdbdata = clean_pdb(pdbData)
+        viewer.addModel(clean_pdbdata, "pdb");
+        const allAtoms  = viewer.getModel().selectedAtoms({});
 
+        saveChanges(viewer)
 
-                viewer.addModel(clean_pdbdata, "pdb");
-                const allAtoms  = viewer.getModel().selectedAtoms({});
+        editor.setValue('');
+        editor.setValue(viewer.pdbData())
 
-              
-                Retrieve_residues(clean_pdbdata)
-                createDropdown(Retrieve_residues(clean_pdbdata), viewer)
-                drop_down_collapse()
-                chain_drop_down( get_chains(allAtoms), viewer)
+        const residueIdsToExclude = [408, 409]; // Replace with your desired residue IDs
+        const filteredAtoms = allAtoms.filter(atom => !residueIdsToExclude.includes(atom.resi));
 
-                const residueIdsToExclude = [408, 409]; // Replace with your desired residue IDs
-                const filteredAtoms = allAtoms.filter(atom => !residueIdsToExclude.includes(atom.resi));
+        viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
+        viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
 
-                viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
-                viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
-
-                document.querySelector('#delete-res').addEventListener('click', ()=>{
-                    viewer.removeAllModels();
-                    const newModel = viewer.addModel();
-                    newModel.addAtoms(filteredAtoms );
-                    viewer.zoomTo(); 
-                    viewer.render(); 
-
-                    save_pdb(viewer)
-                })
-
-                viewer.setClickable({}, true, function (atom, viewer, event, container) {
-                const labelId = atom.resn + ":" + atom.resi;
-            
-                    if (viewer[labelId]) {
-                        viewer.removeLabel(viewer[labelId]);
-                        delete viewer[labelId]; // Clear the reference
-                    } else {
-                        viewer[labelId] = viewer.addLabel(labelId, {
-                            position: { x: atom.x, y: atom.y, z: atom.z },
-                            backgroundColor: 'darkgreen',
-                            backgroundOpacity: 0.8,
-                            fontColor: 'white'
-                        });
-                    }
+        viewer.setClickable({}, true, function (atom, viewer, event, container) {
+        const labelId = atom.resn + ":" + atom.resi;
+    
+            if (viewer[labelId]) {
+                viewer.removeLabel(viewer[labelId]);
+                delete viewer[labelId]; // Clear the reference
+            } else {
+                viewer[labelId] = viewer.addLabel(labelId, {
+                    position: { x: atom.x, y: atom.y, z: atom.z },
+                    backgroundColor: 'darkgreen',
+                    backgroundOpacity: 0.8,
+                    fontColor: 'white'
                 });
-
-                viewer.zoomTo(); // Focus on the entire structure
-                viewer.render(); // Render the scene
-
-            } catch (error) {
-                console.error("Error fetching protein data:", error);
             }
-        };
+        });
 
-        fetchProtein("2RH1");
-    } else {
-        console.error('Element with ID "container-01" not found.');
-    }
+        viewer.zoomTo(); // Focus on the entire structure
+        viewer.render(); // Render the scene
+        NewView = viewer
+    };
 });
 
+var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+    lineNumbers: true, // Display line numbers
+    mode: 'javascript', // Set language mode
+    theme: 'dracula', // Set theme
+    lineWrapping: true, // Enable line wrapping
 
+});
+
+editor.setSize(1000, 700);
+editor.setValue("")
+    
+    
 function chain_drop_down(chainList, viewer){
 
    const mainDropdown = document.querySelector("#dropdownMenu")
+   mainDropdown.innerHTML = "";
+
    const chains =  document.createElement('div')
    chains.className = "chain-dropdown"
 
    const chainDropdownName = document.createElement('span')
    chainDropdownName.textContent = "All Chains"
 
+   const chainDropdownSelect = document.createElement('input')
+   chainDropdownSelect.type = 'checkbox'
+   chainDropdownSelect.className = 'chain-Dropdown-Select'
+
    const allChainsDiv = document.createElement('div')
    allChainsDiv.className  = 'all-chains-div'
    allChainsDiv.style.display = 'block'
 
    chains.append(chainDropdownName)
+   chains.append(chainDropdownSelect)
+   chains.style.marginLeft = '5px'
  
     chainList.forEach(chain =>{
 
@@ -98,10 +93,16 @@ function chain_drop_down(chainList, viewer){
         chainName.className = 'chain-name'
         chainName.dataset.value = chain;
 
+        const chainSelect = document.createElement('input')
+        chainSelect.type = 'checkbox'
+        chainSelect.className = 'chain-select'
+        chainSelect.value = chain
+
         const icon  = document.createElement("i")
         icon.className = "fas fa-trash"
         icon.textContent = `Chain ${chain}`
         chainName.append(icon)
+        chainName.append(chainSelect)
 
         deleteChain(icon, chain, viewer)
 
@@ -119,60 +120,95 @@ function chain_drop_down(chainList, viewer){
         }
     })
     mainDropdown.append(chains)
-
-  
 }
 
 function deleteChain(element, chain, viewer) {
     element.addEventListener('click', ()=>{
         const allAtoms  = viewer.getModel().selectedAtoms({});
         const filteredAtoms = allAtoms.filter(atom => atom.chain !== chain);
-        viewer.removeAllModels();
+        viewer.removeAllModels()
         const newModel = viewer.addModel();
         newModel.addAtoms(filteredAtoms );
-        viewer.zoomTo(); 
-        viewer.render(); 
+        NewView = viewer
+        NewView.zoomTo(); 
+        NewView.render(); 
+        element.parentElement.parentElement.remove()
+        // edit_text(viewer.pdbData())
+        editor.setValue('');
+        editor.setValue(viewer.pdbData())
+
     })
 }
 
 function deleteResidue(element, res_id, viewer) {
     const residueIdsToExclude =[parseInt(res_id)]
     element.addEventListener('click', ()=>{
-        console.log("OK", res_id)
         const allAtoms  = viewer.getModel().selectedAtoms({});
         const filteredAtoms = allAtoms.filter(atom => !residueIdsToExclude.includes(atom.resi));
-        console.log(filteredAtoms)
         viewer.removeAllModels();
         const newModel = viewer.addModel();
         newModel.addAtoms(filteredAtoms );
-        viewer.zoomTo(); 
-        viewer.render(); 
+        NewView = viewer
+        NewView.zoomTo(); 
+        NewView.render(); 
+        element.parentElement.parentElement.remove()
+        editor.setValue('');
+        editor.setValue(viewer.pdbData())
+
     })
 }
 
+function download_pdb(viewer) {
+    const downloadButton = document.querySelector('#delete-res')
+
+    downloadButton.addEventListener('click', ()=>{
+        if (NewView) {
+            pdbData = NewView.pdbData();
+        } else{
+            pdbData = viewer.pdbData();
+        }
+
+        const base64String = btoa(pdbData);
+
+        // Prepare the JSON data with base64 encoded pdbData
+        const data = JSON.stringify({ pdb_data: base64String });
+
+        // Send a POST request to upload the PDB data
+        fetch('http://127.0.0.1:8000/write_pdb_file', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: data
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('File uploaded successfully:', data);
+        })
+        .catch(error => {
+            console.error('Error uploading file:', error);
+        });
+    })
+}
 
 function get_chains(allAtoms) {
-    let chains = new Set(); // Use a set to ensure uniqueness
+
+    let chains = new Set(); 
     
     allAtoms.forEach(atom => {
         if (atom.chain) {
-            chains.add(atom.chain); // Add chain identifiers to the set
+            chains.add(atom.chain); 
         }
     });
     
-    // Convert the set to an array for further use
     let chainList = Array.from(chains);
     console.log("Chains in the protein:", chainList);
 
     return chainList
-
-
 }
 
 function save_pdb (viewer){
 
-    // console.log(viewer.pdbData())
-    // Retrieve the current model
     const model = viewer.getModel();
     if (!model) {
         console.error("Error: No model found in the viewer.");
@@ -262,7 +298,6 @@ function Retrieve_residues(textdata) {
     return residues;
 }
 
-
 function createDropdown(residueData, viewer){
     const dropdownMenu = document.getElementById("dropdownMenu");
 
@@ -287,8 +322,15 @@ function createDropdown(residueData, viewer){
         name_label.dataset.value = Object.keys(residueData)[r]
         name_label.textContent =  Object.keys(residueData)[r]
 
+        const allResidueSelect = document.createElement('input')
+        allResidueSelect.type = 'checkbox'
+        allResidueSelect.className = 'all-residue-select'
+
+       
         Outer_Div.append(name_label)
+        Outer_Div.append(allResidueSelect)
         Outer_Div.append(drop_down)
+      
 
         for (let n in residueData[Object.keys(residueData)[r]]){
             const Inner_span = document.createElement('span')
@@ -300,11 +342,17 @@ function createDropdown(residueData, viewer){
             deleteIcon.textContent = ` Delete ${residueData[Object.keys(residueData)[r]][n]}`
             Inner_span.append(deleteIcon)
 
+            const residueSelect = document.createElement('input')
+            residueSelect.type = 'checkbox'
+            residueSelect.className = 'residue-select'
+            residueSelect.value = residueData[Object.keys(residueData)[r]][n]
+
             deleteResidue(deleteIcon, residueData[Object.keys(residueData)[r]][n], viewer)
 
             const InnerDiv  =  document.createElement('div')
             InnerDiv.className = 'inner-div'
             InnerDiv.append(Inner_span)
+            InnerDiv.append(residueSelect)
             drop_down.append(InnerDiv)
         }
 
@@ -326,7 +374,6 @@ function drop_down_collapse(){
     })
 }
 
-
 function clean_pdb(textdata){
     let clean_lines = []
     let lines = textdata.split('\n')
@@ -341,3 +388,216 @@ function clean_pdb(textdata){
     return clean_lines.join('\n')
   }
 
+  function edit_text(text){
+    edit.setValue('')
+    edit.setValue(text)
+  }
+
+function saveChanges(viewer) {
+    document.querySelector('#save-changes').addEventListener('click', ()=>{
+        console.log(viewer)
+        if (NewView){
+            NewView.removeAllModels();
+            NewView.addModel(editor.getValue(), "pdb");
+            NewView.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
+            NewView.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
+            NewView.zoomTo(); 
+            NewView.render(); 
+        }else{
+            viewer.removeAllModels();
+            viewer.addModel(editor.getValue(), "pdb");
+            viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
+            viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
+            viewer.zoomTo(); 
+            viewer.render(); 
+        }
+    })
+}
+
+function loadPDBQuery() {
+
+    document.querySelector('#pdb-query').addEventListener('click', ()=>{
+        pdbId = document.querySelector('#pdb-query-input').value
+        console.log(NewView)
+
+        NewView.removeAllModels();
+        NewView.addModel('', "pdb");
+
+        LoadPdbToViewer('pdb', pdbId, NewView)
+    })
+
+    document.querySelector('#opm-query').addEventListener('click', ()=>{
+        pdbId = document.querySelector('#opm-query-input').value
+        console.log(NewView)
+
+        NewView.removeAllModels();
+        NewView.addModel('', "pdb");
+
+        LoadPdbToViewer('opm', pdbId, NewView)
+    })
+}
+
+function LoadPdbToViewer(database, pdbId, viewer){
+
+    let url
+    
+    if (database === 'pdb'){
+       url =  `https://files.rcsb.org/download/${pdbId}.pdb`;
+    } else{
+        url =  `https://opm-assets.storage.googleapis.com/pdb/${pdbId.toLowerCase()}.pdb`
+    }
+
+    const fetchProtein = async (url, pdbId, viewer) => {
+
+        try {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch PDB file for ${pdbId}`);
+            }
+
+            const pdbData = await response.text();
+            const clean_pdbdata = clean_pdb(pdbData)
+
+
+            viewer.addModel(clean_pdbdata, "pdb");
+            const allAtoms  = viewer.getModel().selectedAtoms({});
+
+            chain_drop_down( get_chains(allAtoms), viewer)
+            Retrieve_residues(clean_pdbdata)
+            createDropdown(Retrieve_residues(clean_pdbdata), viewer)
+            drop_down_collapse()
+            download_pdb(viewer)
+            saveChanges(viewer)
+
+            selectAllChain()
+            selectAllResidues()
+            deleteSelectedChain(viewer)
+            deleteSelectedResidue(viewer)
+
+            editor.setValue('');
+            editor.setValue(viewer.pdbData())
+
+            const residueIdsToExclude = [408, 409]; // Replace with your desired residue IDs
+            const filteredAtoms = allAtoms.filter(atom => !residueIdsToExclude.includes(atom.resi));
+
+            viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
+            viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
+
+            viewer.setStyle({ resn: "DUM", }, {sphere:{}});
+            viewer.setStyle({ resn: "HOH", }, {sphere:{}});
+            
+            viewer.setClickable({}, true, function (atom, viewer, event, container) {
+            const labelId = atom.resn + ":" + atom.resi+ ":" + atom.chain;
+        
+                if (viewer[labelId]) {
+                    viewer.removeLabel(viewer[labelId]);
+                    delete viewer[labelId]; // Clear the reference
+                } else {
+                    viewer[labelId] = viewer.addLabel(labelId, {
+                        position: { x: atom.x, y: atom.y, z: atom.z },
+                        backgroundColor: 'darkgreen',
+                        backgroundOpacity: 0.8,
+                        fontColor: 'white'
+                    });
+                }
+            });
+
+            viewer.zoomTo(); // Focus on the entire structure
+            viewer.render(); // Render the scene
+
+        } catch (error) {
+            console.error("Error fetching protein data:", error);
+        }
+    };
+
+    fetchProtein(url, pdbId,  NewView);
+}
+
+function selectAllChain() {
+
+    document.querySelectorAll('.chain-Dropdown-Select').forEach((element)=>{
+        element.addEventListener('click', (e)=>{
+            e.target.parentElement.querySelectorAll('.chain-select').forEach((element)=>{
+                element.checked = !element.checked;                
+            })
+        })
+    })
+}
+
+function selectAllResidues() {
+    document.querySelectorAll('.all-residue-select').forEach((element)=>{
+        element.addEventListener('click', (e)=>{
+            e.target.parentElement.querySelectorAll('.residue-select').forEach((element)=>{
+                element.checked = !element.checked;                
+            })
+        })
+    })
+}
+
+function deleteSelectedChain(viewer) {
+    let chainList = {}
+    document.querySelector('#delete-selected').addEventListener('click', ()=>{
+        document.querySelector('.chain-dropdown').querySelectorAll('.chain-select').forEach((element)=>{
+            if(element.checked){
+                chainList[element.value] = element.parentElement
+            }
+        })
+
+        console.log(chainList)
+
+        if( Object.keys(chainList).length > 0){
+            Object.keys(chainList).forEach((chain)=>{
+                const allAtoms  = viewer.getModel().selectedAtoms({});
+                const filteredAtoms = allAtoms.filter(atom => atom.chain !== chain);
+                viewer.removeAllModels()
+                const newModel = viewer.addModel();
+                newModel.addAtoms(filteredAtoms );
+                NewView = viewer
+                NewView.zoomTo(); 
+                NewView.render(); 
+                chainList[chain].parentElement.remove()
+                editor.setValue('');
+                editor.setValue(viewer.pdbData())
+            })
+        }
+    })
+}
+
+
+
+function deleteSelectedResidue(viewer) {
+
+    const allAtoms  = viewer.getModel().selectedAtoms({});
+    let  residueIdsToExclude = []
+
+    document.querySelector('#delete-selected').addEventListener('click', ()=>{
+        document.querySelector('.ligands-dropdown').querySelectorAll('.residue-select').forEach((element)=>{
+            if(element.checked){
+                residueIdsToExclude.push(parseInt(element.value))     
+                element.parentElement.remove()
+            }
+        })
+        const filteredAtoms = allAtoms.filter(atom => !residueIdsToExclude.includes(atom.resi))
+     
+        viewer.removeAllModels();
+        const newModel = viewer.addModel();
+        newModel.addAtoms(filteredAtoms );
+        NewView = viewer
+        NewView.zoomTo(); 
+        NewView.render(); 
+
+        editor.setValue('');
+        editor.setValue(viewer.pdbData())
+    })
+}
+
+
+function loadFile(){
+    document.querySelector('#file-input').addEventListener('change', ()=>{
+
+        console.log("Loaded")
+
+
+    })
+}

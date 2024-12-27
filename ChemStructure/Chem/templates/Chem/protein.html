@@ -4,68 +4,128 @@
 
 <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-<link href="{% static  'Chem/css/protein.css' %}" rel="stylesheet">
+<link href="{% static 'Chem/css/protein.css' %}" rel="stylesheet">
 
 <script type="text/javascript"> 
     var pdb_test = "{% static 'Chem/data/0ns.pdb' %}"
-
 </script>
 
 <section id="main-content">
-    <div class="row" style="margin-left: 10px;">
 
-        <div style="width:100%; margin-left: 30px; margin-top: 10px;">
-            <li class="label" style="float:left; margin-left:5px;" > Search by PubChem ID </li>
-        </div>
-        <div class="form-group col-xs-3">
-            <div class="input-group" style="margin-bottom:5px;">
-                <div class="form-outline">
-                    <input type="search"  class="form-control"  id="pub-chem-form"/>
+    <!-- Adjustable Columns -->
+    <div id="adjustable-columns">
+        <!-- Left Column -->
+        <div id="left-column">
+            <div class="card">
+                <div class="card-title">
+                    <div class="dropdown" style="">
+                        <h4>PDB Text Editor</h4>
+                        <textarea id="editor"  ></textarea>
+                    </div>
+                    <button type="button" class="btn btn-default form-control" style="width:180px; margin-left:10px;" id="save-changes">Save Changes</button>
                 </div>
-                <button type="button" class="btn btn-primary" style="height:42px; border-radius: 0px;">
-                    <i class="fa fa-search"></i>
-                </button>
             </div>
+        </div>
+
+        <!-- Resizable Divider -->
+        <div id="divider"></div>
+
+        <!-- Right Column -->
+        <div id="right-column">
+            <div class="card">
+                <div class="card-title">
+          
+                </div>
+                <div id="container-01" style="width: 100%; height: 600px;"></div>
             </div>
-
-        <div class="form-group col-xs-3">
-            <button type="button" class="btn btn-default form-control" style="width:130px; margin-left:10px;" id="update-3d-view">Update 3D view</button>
-        </div>
-
-        <div class="form-group col-xs-3">
-            <button type="button" class="btn btn-default form-control" style="width:160px; margin-left:10px;" id="save-mol-to-galaxy">Save mol to Galaxy</button>
-        </div>
-
-        <div class="form-group col-xs-3">
-        <button type="button" class="btn btn-default form-control" style="width:100px; margin-left:10px;" id="exit-tool">Exit Tool</button>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-4">
-
             <div class="card">
                 <div class="card-title">
                     <div class="dropdown">
                         <div class="dropdown-content" id="dropdownMenu"></div>
                     </div>
-                    <button type="button" class="btn btn-default form-control" style="width:180px; margin-left:10px;" id="delete-res">Delete Residues</button>
+                    <button type="button" class="btn btn-default form-control" style="width:180px; margin-left:10px;" id="delete-res">Save Edited PDB File</button> <button type="button" class="btn btn-default form-control" style="width:180px; margin-left:10px;" id="delete-selected">Delete Selected</button>
                 </div>
             </div>
         </div>
-        <div class="col-lg-8">
-
-            <div class="card">
-                <div class="card-title">
-                    <h4>Editor and Drawing.</h4>
-                </div>
-
-                <div id="container-01" style="width: 800px; height: 600px;"></div>
-
-            </div>
-        </div>
+        
     </div>
 
+    <!-- CodeMirror Integration -->
 
+    <!-- CodeMirror CSS and JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script>
+        // Initialize CodeMirror
+        var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+            lineNumbers: true, // Display line numbers
+            mode: 'javascript', // Set language mode
+            theme: 'dracula', // Set theme
+            lineWrapping: false, // Enable line wrapping
+
+        });
+
+        editor.setSize('100%', '730')
+
+
+    </script>
+
+    <style>
+        #adjustable-columns {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #left-column {
+            background-color: #f0f0f0;
+            width: 40%; /* Initial width */
+            min-width: 200px; /* Minimum width */
+            overflow: auto;
+        }
+
+        #right-column {
+            background-color: #d0d0d0;
+            flex-grow: 1; /* Fills the remaining space */
+            overflow: auto;
+        }
+
+        #divider {
+            width: 5px;
+            background-color: #888;
+            cursor: ew-resize; /* Change cursor style on hover */
+        }
+    </style>
+
+    <script>
+        // JavaScript for Resizing Columns
+        const divider = document.getElementById('divider');
+        const leftColumn = document.getElementById('left-column');
+        const rightColumn = document.getElementById('right-column');
+        let isResizing = false;
+
+        divider.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'ew-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const newLeftWidth = e.clientX;
+            const totalWidth = document.body.clientWidth;
+
+            if (newLeftWidth > 200 && newLeftWidth < totalWidth - 200) {
+                leftColumn.style.width = `${newLeftWidth}px`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = '';
+        });
+    </script>
 </section>
 {% endblock %}

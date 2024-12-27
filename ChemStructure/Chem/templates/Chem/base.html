@@ -55,8 +55,9 @@
                     <div class="logo"><a href="{% url 'ints' %}">
                         <span>Chem Draw</span></a></div>
 
-                    <li class="label">Apps</li>
-                    <li><a class="sidebar-sub-toggle"><i class="ti-bar-chart-alt"></i> Available Structures <span class="sidebar-collapse-icon ti-angle-down"></span></a>
+                    <li class="label" style="{% if request.path == '/protein_viewer' %}display: none;{% else %}display: block;{% endif %}" >Apps</li>
+
+                    <li><a class="sidebar-sub-toggle" style="{% if request.path == '/protein_viewer' %}display: none;{% else %}display: block;{% endif %}" ><i class="ti-bar-chart-alt"></i> Available Structures <span class="sidebar-collapse-icon ti-angle-down"></span></a>
                         <ul id="chem_structure" style="height: 200px; overflow-y:auto;">
                             {% for d in mols %}
                                 <div><button type="button" class="btn btn-default form-control {{d}}" style="width:100%; margin:1px;">Chem-{{d}}</button></div>
@@ -64,38 +65,35 @@
                         </ul>
                     </li>
 
-                    <li><a class="sidebar-sub-toggle"><i class="ti-video-camera"></i> Rendering <span
-                                class="sidebar-collapse-icon ti-angle-down"></span></a>
+                    <li><a class="sidebar-sub-toggle" style="{% if request.path == '/protein_viewer' %}display: none;{% else %}display: block;{% endif %}"><i class="ti-video-camera"></i> Rendering <span  class="sidebar-collapse-icon ti-angle-down"></span></a>
                         <ul>
                             <button type="button" class="btn btn-default form-control" style="width:100%; margin:1px;" id="rendering-stick"> Stick </button>
                             <button type="button" class="btn btn-default form-control" style="width:100%; margin:1px;" id="rendering-ball_stick"> Ball stick </button>
                             <button type="button" class="btn btn-default form-control" style="width:100%; margin:1px;" id="rendering-space_fill"> Space fill</button>
                         </ul>
                     </li>
-                    <li><a class="sidebar-sub-toggle"><i class="ti-hummer"></i> Tools <span class="sidebar-collapse-icon ti-angle-down"></span></a>
+
+                    <li><a class="sidebar-sub-toggle" style="{% if request.path == '/protein_viewer' %}display: none;{% else %}display: block;{% endif %}"><i class="ti-hummer"></i> Tools <span class="sidebar-collapse-icon ti-angle-down"></span></a>
                         <ul>
                             <button type="button" class="btn btn-default form-control" style="width:100%; margin:1px;" id="tool-b-1"> Confirmation Optimization </button>
                             <button type="button" class="btn btn-default form-control" style="width:100%; margin:1px;" id="tool-b-2"> Save 2D Image </button>
                             <button type="button" class="btn btn-default form-control" style="width:100%; margin:1px;" id="rendering-Properties">Compute Properties </button>
                         </ul>
                     </li>
-                    <li><a class="sidebar-sub-toggle"><i class="ti-hummer"></i> Protein 3D Viewer. <span class="sidebar-collapse-icon ti-angle-down"></span></a>
-                        <ul>
-                            <a href="{% url 'protein_viewer' %}"> <button type="button" class="btn btn-default form-control" style="width:100%; margin:1px;" id="protein-Viewer"> Protein Viewer </button></a>
-                            <button type="button" class="btn btn-default form-control" style="width:100%; margin:1px;" id="tool-b-2"> Oriented Membrane Proteins  </button>
 
-                            <div>
-                                <input type="text"> </input> 
-                            <div> 
-                            <button type="button" class="btn btn-default form-control" style="width:100%; margin:1px;" id="rendering-Properties">PDB database</button>
+                    <li id="protein-viewer-button" ><a class="sidebar-sub-toggle" ><i class="ti-hummer"></i> Protein 3D Viewer. <span class="sidebar-collapse-icon ti-angle-down"></span></a>
+                        <ul id="protein-viewer-button-list" style="{% if request.path == '/protein_viewer' %}display: block;{% else %}display: none;{% endif %}">                        
+                            <div> <input type="text" id='pdb-query-input'> </input> <button type="button" class="btn btn-default form-control" style="" id="pdb-query">PDB query</button></div>
+                            <div> <input type="text" id='opm-query-input' > </input> <button type="button" class="btn btn-default form-control" style="" id="opm-query">OPM query</button></div>
+                            <div> <input type="file" id='file-input' > </input></div>
+
                         </ul>
                     </li>
-                    <li><a href="https://{{host}}/documents"><i class="ti-file"></i> Documentation</a></li>
+                    <li><a href="https://{{host}}/documents" style="{% if request.path == '/protein_viewer' %}display: none;{% else %}display: block;{% endif %}" ><i class="ti-file"></i> Documentation</a></li>
                 </ul>
             </div>
         </div>
     </div>
-    <!-- /# sidebar -->
 
     <div class="header">
         <div class="container-fluid">

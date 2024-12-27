@@ -226,10 +226,10 @@ smtg.addEventListener('click', ()=>{
     var mol = composer.getChemObj();
     var cmlData1 = Kekule.IO.saveFormatData( mol, 'mol');
 
-
-
     console.log(cmlData1)
     var data = {'file':cmlData1}
+
+    console.log(write_mol_file)
 
     $.ajax({
         url: write_mol_file,
@@ -256,6 +256,17 @@ ext.addEventListener('click', ()=>{
     }).done(function(data) {
 
     })
+})
+
+
+document.querySelector('#protein-viewer-button').addEventListener('click', ()=>{
+    window.open('http://127.0.0.1:8000/protein_viewer', '_blank'); 
+
+    document.querySelector('#protein-viewer-button-list').style.display = 'block'
+
+    console.log("OK")
+
+
 })
 
 

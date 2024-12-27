@@ -14,6 +14,7 @@ from rdkit.Chem import SDWriter
 import requests
 import json
 from .utils import SDF_reader, GetSDFProperties
+import base64
 
 data = SDF_reader(os.path.join(settings.STATIC_ROOT, 'Chem', 'data', 'data.sdf'))
 
@@ -31,14 +32,8 @@ def write_mol_file(request):
             out_file_path = os.path.join(settings.STATIC_ROOT, 'Chem', 'out', 'mol')
             out_file_png = os.path.join(settings.STATIC_ROOT, 'Chem', 'out', 'image')
 
-            # if os.path.exists(out_file_path):
-            #     os.remove(out_file_path)
-
-            # f =  open(out_file_path, 'w')
-
             print(form.dict()['file'])
-            # f.write(form.dict()['file'])
-            # f.close()
+
 
             mol = Chem.MolFromMolBlock(form.dict()['file'])
             writer = SDWriter(out_file_path+'/molecule.sdf')
@@ -144,7 +139,29 @@ def protein_viewer(request):
 def download_protein_structure(request):
     return render(request, 'Chem/protein.html', {})
 
+@csrf_exempt  # Disable CSRF for the API (use with caution, or implement CSRF protection)
+def  write_pdb_file(request):
 
+    print("lele")
+    if request.method == 'POST':
+        try:
+            json_data = json.loads(request.body)
+            pdb_base64 = json_data.get('pdb_data')
 
+            if pdb_base64:
+ 
+                pdb_bytes = base64.b64decode(pdb_base64)
+                out_file_path = os.path.join(settings.STATIC_ROOT, 'Chem', 'out', 'protein','Newuploaded.pdb')
+                with open(out_file_path, 'wb') as f:
+                    f.write(pdb_bytes)
 
+                return JsonResponse({'message': 'PDB file uploaded successfully'}, status=200)
 
+            return JsonResponse({'error': 'No PDB data provided'}, status=400)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid method'}, status=405)
+def test(request):
+    return render(request, 'Chem/test.html', {})

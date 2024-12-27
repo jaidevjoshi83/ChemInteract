@@ -12,5 +12,7 @@ urlpatterns = [
     path(r'fetch_pub_chem', views.fetch_pub_chem, name="fetch_pub_chem"),
     path(r'mol_properties', views.mol_properties, name="mol_properties"),
     path(r'save_image', views.save_image, name="save_image"),
-    path(r'protein_viewer', views.protein_viewer, name='protein_viewer')  
+    path(r'protein_viewer', views.protein_viewer, name='protein_viewer'),  
+    path(r'write_pdb_file', views.write_pdb_file, name='write_pdb_file'),
+    path(r'test', views.test, name='test')
 ]

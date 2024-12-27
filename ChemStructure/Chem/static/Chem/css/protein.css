@@ -1,13 +1,6 @@
 
 
-#dropdownMenu {
-    height: 600px; /* Set the desired height */
-    width: 100%; /* Optional: set width */
-    overflow-y: auto; /* Enables vertical scrolling */
-    overflow-x: hidden; /* Disables horizontal scrolling */
-    border: 1px solid #ccc; /* Optional: add a border for visibility */
-    padding: 10px; /* Optional: add padding for content spacing */
-}
+
 
 .residue-dropdown {
     
@@ -27,5 +20,40 @@
 
 .chain-name {
     margin-left: 30px;
+    
+}
+
+.ligands-dropdown {
+    height: 200px;
+    overflow-y: auto; 
+    overflow-x: hidden; 
+    border: 1px solid #ccc; 
+    padding: 10px; 
+    box-sizing: border-box; 
+}
+.chain-dropdown {
+    height: 100px; 
+    overflow-y: auto; 
+    overflow-x: hidden;
+    border: 1px solid #ccc; 
+    padding: 10px; 
+    box-sizing: border-box; 
+    
+}
+
+#pdb-query {
+    background: rgb(14,115,233);
+    height: 25px;
+    width: 90px;
+    margin: 0px;
+    padding: 0px;
+    
+}
+#opm-query {
+    background: rgb(14,115,233);
+    height: 25px;
+    width: 90px;
+    margin: 0px;
+    padding: 0px;
     
 }
