@@ -1,31 +1,33 @@
 let NewView  = null
-let edit 
+let edit
 
-
-document.addEventListener('DOMContentLoaded', function () {
+function ProteinVisualizer(pdbData) {
     let element = document.querySelector('#container-01');
+
     if (element) {
         let config = { backgroundColor: 'white' };
-        let viewer = $3Dmol.createViewer(element, config);
 
-        loadFile()
-        loadPDBQuery()
+        viewer = $3Dmol.createViewer(element, config);
+        viewer.addModel(pdbData, "pdb");
 
-        const clean_pdbdata = ''
-
-        viewer.addModel(clean_pdbdata, "pdb");
         const allAtoms  = viewer.getModel().selectedAtoms({});
 
+        chain_drop_down( get_chains(allAtoms), viewer)
+        Retrieve_residues(pdbData)
+        createDropdown(Retrieve_residues(pdbData), viewer)
+        drop_down_collapse()
+        download_pdb(viewer)
         saveChanges(viewer)
 
-        editor.setValue('');
-        editor.setValue(viewer.pdbData())
-
-        const residueIdsToExclude = [408, 409]; // Replace with your desired residue IDs
-        const filteredAtoms = allAtoms.filter(atom => !residueIdsToExclude.includes(atom.resi));
+        selectAllChain()
+        selectAllResidues()
+        deleteSelectedChain(viewer)
+        deleteSelectedResidue(viewer)
 
         viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
         viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
+        viewer.setStyle({ resn: "DUM", }, {sphere:{}});
+        viewer.setStyle({ resn: "HOH", }, {sphere:{}});
 
         viewer.setClickable({}, true, function (atom, viewer, event, container) {
         const labelId = atom.resn + ":" + atom.resi;
@@ -45,22 +47,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         viewer.zoomTo(); // Focus on the entire structure
         viewer.render(); // Render the scene
-        NewView = viewer
+        editor.setValue('');
+        editor.setValue(pdbData)
     };
-});
+}
 
-var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
-    lineNumbers: true, // Display line numbers
-    mode: 'javascript', // Set language mode
-    theme: 'dracula', // Set theme
-    lineWrapping: true, // Enable line wrapping
 
-});
-
-editor.setSize(1000, 700);
-editor.setValue("")
-    
-    
 function chain_drop_down(chainList, viewer){
 
    const mainDropdown = document.querySelector("#dropdownMenu")
@@ -133,7 +125,6 @@ function deleteChain(element, chain, viewer) {
         NewView.zoomTo(); 
         NewView.render(); 
         element.parentElement.parentElement.remove()
-        // edit_text(viewer.pdbData())
         editor.setValue('');
         editor.setValue(viewer.pdbData())
 
@@ -243,7 +234,6 @@ function save_pdb (viewer){
 }
 
 
-// Example: Filter atoms and update the viewer
 function updateViewerWithFilteredAtoms(residueIdsToKeep, viewer) {
 
     console.log(viewer)
@@ -326,12 +316,10 @@ function createDropdown(residueData, viewer){
         allResidueSelect.type = 'checkbox'
         allResidueSelect.className = 'all-residue-select'
 
-       
         Outer_Div.append(name_label)
         Outer_Div.append(allResidueSelect)
         Outer_Div.append(drop_down)
       
-
         for (let n in residueData[Object.keys(residueData)[r]]){
             const Inner_span = document.createElement('span')
             Inner_span.className = 'residue-number'
@@ -395,50 +383,30 @@ function clean_pdb(textdata){
 
 function saveChanges(viewer) {
     document.querySelector('#save-changes').addEventListener('click', ()=>{
-        console.log(viewer)
-        if (NewView){
-            NewView.removeAllModels();
-            NewView.addModel(editor.getValue(), "pdb");
-            NewView.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
-            NewView.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
-            NewView.zoomTo(); 
-            NewView.render(); 
-        }else{
-            viewer.removeAllModels();
-            viewer.addModel(editor.getValue(), "pdb");
-            viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
-            viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
-            viewer.zoomTo(); 
-            viewer.render(); 
-        }
+        viewer.removeAllModels();
+        viewer.addModel(editor.getValue(), "pdb");
+        viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
+        viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
+        viewer.zoomTo(); 
+        viewer.render(); 
+        chain_drop_down( get_chains(viewer.getModel().selectedAtoms({})), viewer)
+        createDropdown(Retrieve_residues(viewer.pdbData()), viewer)
     })
 }
 
 function loadPDBQuery() {
-
     document.querySelector('#pdb-query').addEventListener('click', ()=>{
         pdbId = document.querySelector('#pdb-query-input').value
-        console.log(NewView)
-
-        NewView.removeAllModels();
-        NewView.addModel('', "pdb");
-
-        LoadPdbToViewer('pdb', pdbId, NewView)
+        fetchPdbFile('pdb',  pdbId)
     })
 
     document.querySelector('#opm-query').addEventListener('click', ()=>{
         pdbId = document.querySelector('#opm-query-input').value
-        console.log(NewView)
-
-        NewView.removeAllModels();
-        NewView.addModel('', "pdb");
-
-        LoadPdbToViewer('opm', pdbId, NewView)
+        fetchPdbFile('opm',  pdbId)
     })
 }
 
-function LoadPdbToViewer(database, pdbId, viewer){
-
+function fetchPdbFile(database, pdbId){
     let url
     
     if (database === 'pdb'){
@@ -458,53 +426,8 @@ function LoadPdbToViewer(database, pdbId, viewer){
 
             const pdbData = await response.text();
             const clean_pdbdata = clean_pdb(pdbData)
+            ProteinVisualizer(pdbData)
 
-
-            viewer.addModel(clean_pdbdata, "pdb");
-            const allAtoms  = viewer.getModel().selectedAtoms({});
-
-            chain_drop_down( get_chains(allAtoms), viewer)
-            Retrieve_residues(clean_pdbdata)
-            createDropdown(Retrieve_residues(clean_pdbdata), viewer)
-            drop_down_collapse()
-            download_pdb(viewer)
-            saveChanges(viewer)
-
-            selectAllChain()
-            selectAllResidues()
-            deleteSelectedChain(viewer)
-            deleteSelectedResidue(viewer)
-
-            editor.setValue('');
-            editor.setValue(viewer.pdbData())
-
-            const residueIdsToExclude = [408, 409]; // Replace with your desired residue IDs
-            const filteredAtoms = allAtoms.filter(atom => !residueIdsToExclude.includes(atom.resi));
-
-            viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
-            viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
-
-            viewer.setStyle({ resn: "DUM", }, {sphere:{}});
-            viewer.setStyle({ resn: "HOH", }, {sphere:{}});
-            
-            viewer.setClickable({}, true, function (atom, viewer, event, container) {
-            const labelId = atom.resn + ":" + atom.resi+ ":" + atom.chain;
-        
-                if (viewer[labelId]) {
-                    viewer.removeLabel(viewer[labelId]);
-                    delete viewer[labelId]; // Clear the reference
-                } else {
-                    viewer[labelId] = viewer.addLabel(labelId, {
-                        position: { x: atom.x, y: atom.y, z: atom.z },
-                        backgroundColor: 'darkgreen',
-                        backgroundOpacity: 0.8,
-                        fontColor: 'white'
-                    });
-                }
-            });
-
-            viewer.zoomTo(); // Focus on the entire structure
-            viewer.render(); // Render the scene
 
         } catch (error) {
             console.error("Error fetching protein data:", error);
@@ -544,8 +467,6 @@ function deleteSelectedChain(viewer) {
             }
         })
 
-        console.log(chainList)
-
         if( Object.keys(chainList).length > 0){
             Object.keys(chainList).forEach((chain)=>{
                 const allAtoms  = viewer.getModel().selectedAtoms({});
@@ -563,8 +484,6 @@ function deleteSelectedChain(viewer) {
         }
     })
 }
-
-
 
 function deleteSelectedResidue(viewer) {
 
@@ -592,12 +511,32 @@ function deleteSelectedResidue(viewer) {
     })
 }
 
+function loadFile() {
+    const input = document.querySelector('#file-input')
 
-function loadFile(){
-    document.querySelector('#file-input').addEventListener('change', ()=>{
+    input.addEventListener('change', (event) => {
+        console.log("OK")
+        const file = event.target.files[0]; // Get the selected file
+        if (file) {
+            const reader = new FileReader();
 
-        console.log("Loaded")
+            reader.onload = function (e) {
+                const fileData = e.target.result; // File content
+                ProteinVisualizer(fileData)
+            };
 
+            reader.onerror = function (e) {
+                console.error("Error reading file:", e);
+            };
 
-    })
+            reader.readAsText(file);
+        } else {
+            console.log("No file selected.");
+        };
+    });
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadFile()
+    loadPDBQuery()
+})
