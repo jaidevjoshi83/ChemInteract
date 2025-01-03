@@ -8,9 +8,21 @@
 
 <script type="text/javascript"> 
     var pdb_test = "{% static 'Chem/data/0ns.pdb' %}"
+    var pdbData = "{{proteinData}}"
 </script>
 
+
 <section id="main-content">
+
+    <div class="row" style="margin-left: 10px;">
+        <div class="form-group col-xs-3">
+            <button type="button" class="btn btn-default form-control" style="width:185px; margin-left:10px;" id="save-protein-to-galaxy">Save Protein to Galaxy</button>
+        </div>
+
+        <div class="form-group col-xs-3">
+            <button type="button" class="btn btn-default form-control" style="width:100px; margin-left:10px;" id="exit-tool">Exit Tool</button>
+        </div>
+    </div>
 
     <!-- Adjustable Columns -->
     <div id="adjustable-columns">
@@ -128,4 +140,6 @@
         });
     </script>
 </section>
+
+<div id="config" data-base-url="{{ request.scheme }}://{{ request.get_host }}"></div>
 {% endblock %}

@@ -16,7 +16,11 @@ import json
 from .utils import SDF_reader, GetSDFProperties
 import base64
 
-data = SDF_reader(os.path.join(settings.STATIC_ROOT, 'Chem', 'data', 'data.sdf'))
+
+if os.path.isfile(os.path.join(settings.STATIC_ROOT, 'Chem', 'data', 'data.sdf')):
+    data = SDF_reader(os.path.join(settings.STATIC_ROOT, 'Chem', 'data', 'data.sdf'))
+else:
+    data = {}
 
 def ints(request):
     return render(request, 'Chem/index.html', {'data':'', 'mols':list(data.keys()), 'host':request.get_host()})
@@ -32,7 +36,14 @@ def write_mol_file(request):
             out_file_path = os.path.join(settings.STATIC_ROOT, 'Chem', 'out', 'mol')
             out_file_png = os.path.join(settings.STATIC_ROOT, 'Chem', 'out', 'image')
 
-            print(form.dict()['file'])
+            # Ensure the directories exist
+            for path in [out_file_path, out_file_png]:
+                directory = os.path.dirname(path)
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                    print(f"Directory created: {directory}")
+                else:
+                    print(f"Directory already exists: {directory}")
 
 
             mol = Chem.MolFromMolBlock(form.dict()['file'])
@@ -57,9 +68,22 @@ def close_server(request):
 @csrf_exempt
 def load_chem(request):
     id = request.GET.get('id')
-    data = SDF_reader(os.path.join(settings.STATIC_ROOT,  'Chem', 'data', 'data.sdf'))
-    properties = GetSDFProperties(data[int(id)])
-    return JsonResponse({'mol':"".join(data[int(id)]), "properties":properties}, status=201)
+
+    file_path = os.path.join(settings.STATIC_ROOT,  'Chem', 'data', 'data.sdf')
+
+    
+    if os.path.isfile(file_path):
+        data = SDF_reader(file_path)
+        properties = GetSDFProperties(data[int(id)])
+        print(properties)
+        return JsonResponse({'mol':"".join(data[int(id)]), "properties":properties}, status=201)
+    else:
+        properties = {}
+        return JsonResponse({'mol':"", "properties":properties}, status=201)
+
+
+    # properties = GetSDFProperties(data[int(id)])
+    # return JsonResponse({'mol':"".join(data[int(id)]), "properties":properties}, status=201)
 
 
 @csrf_exempt
@@ -117,7 +141,6 @@ def mol_properties(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-
 @csrf_exempt
 def save_image(request):
     if request.method == "POST":
@@ -133,16 +156,24 @@ def save_image(request):
 
 
 def protein_viewer(request):
-    return render(request, 'Chem/protein.html', {})
+    filePath = os.path.join(settings.STATIC_ROOT,  'protein', 'data', 'data.pdb')
 
+    if os.path.isfile(filePath):
+        with open(filePath, 'r') as file:
+            content = file.read()
+        # If the content is a simple string and you want to convert it to JSON
+        json_string = json.dumps({"content": content})
+    else:
+        json_string = ''
+
+    return render(request, 'Chem/protein.html', {'host':request.get_host(), "proteinData":json_string }) 
+    
 
 def download_protein_structure(request):
     return render(request, 'Chem/protein.html', {})
 
 @csrf_exempt  # Disable CSRF for the API (use with caution, or implement CSRF protection)
 def  write_pdb_file(request):
-
-    print("lele")
     if request.method == 'POST':
         try:
             json_data = json.loads(request.body)
@@ -151,7 +182,7 @@ def  write_pdb_file(request):
             if pdb_base64:
  
                 pdb_bytes = base64.b64decode(pdb_base64)
-                out_file_path = os.path.join(settings.STATIC_ROOT, 'Chem', 'out', 'protein','Newuploaded.pdb')
+                out_file_path = os.path.join(settings.STATIC_ROOT, 'protein', 'out','data.pdb')
                 with open(out_file_path, 'wb') as f:
                     f.write(pdb_bytes)
 

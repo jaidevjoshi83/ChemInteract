@@ -1,57 +1,58 @@
 let NewView  = null
 let edit
+let baseUrl 
 
-function ProteinVisualizer(pdbData) {
-    let element = document.querySelector('#container-01');
+document.addEventListener('DOMContentLoaded', () => {
+    baseUrl = document.getElementById('config').dataset.baseUrl;
+    console.log(baseUrl);
+});
 
-    if (element) {
-        let config = { backgroundColor: 'white' };
+function ProteinVisualizer(viewer,  pdbData) {
 
-        viewer = $3Dmol.createViewer(element, config);
-        viewer.addModel(pdbData, "pdb");
+    viewer.removeAllModels()
 
-        const allAtoms  = viewer.getModel().selectedAtoms({});
+    viewer.addModel(pdbData, "pdb");
 
-        chain_drop_down( get_chains(allAtoms), viewer)
-        Retrieve_residues(pdbData)
-        createDropdown(Retrieve_residues(pdbData), viewer)
-        drop_down_collapse()
-        download_pdb(viewer)
-        saveChanges(viewer)
+    const allAtoms  = viewer.getModel().selectedAtoms({});
 
-        selectAllChain()
-        selectAllResidues()
-        deleteSelectedChain(viewer)
-        deleteSelectedResidue(viewer)
-
-        viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
-        viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
-        viewer.setStyle({ resn: "DUM", }, {sphere:{}});
-        viewer.setStyle({ resn: "HOH", }, {sphere:{}});
-
-        viewer.setClickable({}, true, function (atom, viewer, event, container) {
-        const labelId = atom.resn + ":" + atom.resi;
+    chain_drop_down( get_chains(allAtoms), viewer)
+    createDropdown(Retrieve_residues(pdbData), viewer)
+    deleteResidue(viewer)
     
-            if (viewer[labelId]) {
-                viewer.removeLabel(viewer[labelId]);
-                delete viewer[labelId]; // Clear the reference
-            } else {
-                viewer[labelId] = viewer.addLabel(labelId, {
-                    position: { x: atom.x, y: atom.y, z: atom.z },
-                    backgroundColor: 'darkgreen',
-                    backgroundOpacity: 0.8,
-                    fontColor: 'white'
-                });
-            }
-        });
+    drop_down_collapse()
+    download_pdb(viewer)
+    saveChanges(viewer)
 
-        viewer.zoomTo(); // Focus on the entire structure
-        viewer.render(); // Render the scene
-        editor.setValue('');
-        editor.setValue(pdbData)
-    };
+    selectAllChain()
+    selectAllResidues()
+    deleteSelectedResidue(viewer)
+
+    viewer.setStyle({ resn: "HOH", invert: true }, { cartoon: { color: 'spectrum' } }); 
+    viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
+    viewer.setStyle({ resn: "DUM", }, {sphere:{}});
+    viewer.setStyle({ resn: "HOH", }, {sphere:{}});
+
+    viewer.setClickable({}, true, function (atom, viewer, event, container) {
+    const labelId = atom.resn + ":" + atom.resi;
+
+        if (viewer[labelId]) {
+            viewer.removeLabel(viewer[labelId]);
+            delete viewer[labelId]; 
+        } else {
+            viewer[labelId] = viewer.addLabel(labelId, {
+                position: { x: atom.x, y: atom.y, z: atom.z },
+                backgroundColor: 'darkgreen',
+                backgroundOpacity: 0.8,
+                fontColor: 'white'
+            });
+        }
+    });
+
+    viewer.zoomTo(); 
+    viewer.render(); 
+    editor.setValue('');
+    editor.setValue(pdbData)
 }
-
 
 function chain_drop_down(chainList, viewer){
 
@@ -73,7 +74,7 @@ function chain_drop_down(chainList, viewer){
    allChainsDiv.style.display = 'block'
 
    chains.append(chainDropdownName)
-   chains.append(chainDropdownSelect)
+
    chains.style.marginLeft = '5px'
  
     chainList.forEach(chain =>{
@@ -83,8 +84,7 @@ function chain_drop_down(chainList, viewer){
 
         const chainName = document.createElement('span')
         chainName.className = 'chain-name'
-        chainName.dataset.value = chain;
-
+    
         const chainSelect = document.createElement('input')
         chainSelect.type = 'checkbox'
         chainSelect.className = 'chain-select'
@@ -94,7 +94,6 @@ function chain_drop_down(chainList, viewer){
         icon.className = "fas fa-trash"
         icon.textContent = `Chain ${chain}`
         chainName.append(icon)
-        chainName.append(chainSelect)
 
         deleteChain(icon, chain, viewer)
 
@@ -127,25 +126,47 @@ function deleteChain(element, chain, viewer) {
         element.parentElement.parentElement.remove()
         editor.setValue('');
         editor.setValue(viewer.pdbData())
+        
+        document.querySelector('.ligands-dropdown').innerHTML =  ''
 
+        createDropdown(Retrieve_residues(NewView.pdbData()), NewView)
+       
+        deleteResidue(NewView)
+        drop_down_collapse()
+
+        
     })
 }
 
-function deleteResidue(element, res_id, viewer) {
-    const residueIdsToExclude =[parseInt(res_id)]
-    element.addEventListener('click', ()=>{
-        const allAtoms  = viewer.getModel().selectedAtoms({});
-        const filteredAtoms = allAtoms.filter(atom => !residueIdsToExclude.includes(atom.resi));
-        viewer.removeAllModels();
-        const newModel = viewer.addModel();
-        newModel.addAtoms(filteredAtoms );
-        NewView = viewer
-        NewView.zoomTo(); 
-        NewView.render(); 
-        element.parentElement.parentElement.remove()
-        editor.setValue('');
-        editor.setValue(viewer.pdbData())
+function deleteResidue(viewer) {
 
+    const elms = document.querySelector('.ligands-dropdown').querySelectorAll('.fas.fa-trash')
+
+    elms.forEach((element)=>{
+        const residueIdsToExclude =[parseInt(element.parentElement.parentElement.querySelector('.residue-select').value )]
+        
+        element.addEventListener('click', ()=>{
+            const allAtoms  = viewer.getModel().selectedAtoms({});
+            const filteredAtoms = allAtoms.filter(atom => !residueIdsToExclude.includes(atom.resi));
+            viewer.removeAllModels();
+            const newModel = viewer.addModel();
+            newModel.addAtoms(filteredAtoms );
+            NewView = viewer    
+            NewView.zoomTo(); 
+            NewView.render(); 
+            
+            editor.setValue('');
+            editor.setValue(viewer.pdbData())
+
+            const parentElement = element.parentElement.parentElement.parentElement;
+            const childElements = parentElement.querySelectorAll('.inner-div');
+        
+            if (childElements.length <= 1) {
+                parentElement.parentElement.remove();
+            } else {
+                element.parentElement.parentElement.remove();
+            }
+        })
     })
 }
 
@@ -165,7 +186,7 @@ function download_pdb(viewer) {
         const data = JSON.stringify({ pdb_data: base64String });
 
         // Send a POST request to upload the PDB data
-        fetch('http://127.0.0.1:8000/write_pdb_file', {
+        fetch(`${baseUrl}/write_pdb_file`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -233,7 +254,6 @@ function save_pdb (viewer){
 
 }
 
-
 function updateViewerWithFilteredAtoms(residueIdsToKeep, viewer) {
 
     console.log(viewer)
@@ -261,8 +281,9 @@ function updateViewerWithFilteredAtoms(residueIdsToKeep, viewer) {
     viewer.render();
 }
 
-
 function Retrieve_residues(textdata) {
+
+    console.log(textdata)
     const residues = {};
 
     let lines = textdata.split('\n');
@@ -285,11 +306,20 @@ function Retrieve_residues(textdata) {
             }
         }
     });
+
+    console.log(residues)
     return residues;
 }
 
 function createDropdown(residueData, viewer){
+
     const dropdownMenu = document.getElementById("dropdownMenu");
+
+    const existingDropdown = dropdownMenu.querySelector('.ligands-dropdown');
+    if (existingDropdown) {
+        existingDropdown.remove(); // Remove the existing dropdown
+    }
+
 
     const boundLigands  = document.createElement('div')
     boundLigands.className = 'ligands-dropdown'
@@ -306,6 +336,7 @@ function createDropdown(residueData, viewer){
         drop_down.className = 'residue-dropdown'
         drop_down.style.display = 'none'
         Outer_Div.className = 'residue-name'
+
         const name_label  = document.createElement('span')
         name_label.className = 'name'
 
@@ -321,8 +352,10 @@ function createDropdown(residueData, viewer){
         Outer_Div.append(drop_down)
       
         for (let n in residueData[Object.keys(residueData)[r]]){
+            console.log(residueData[Object.keys(residueData)[r]][n])
             const Inner_span = document.createElement('span')
             Inner_span.className = 'residue-number'
+            Inner_span.value =  residueData[Object.keys(residueData)[r]][n]
             // Inner_span.textContent = residueData[Object.keys(residueData)[r]][n]
 
             const deleteIcon  = document.createElement("i")
@@ -334,9 +367,7 @@ function createDropdown(residueData, viewer){
             residueSelect.type = 'checkbox'
             residueSelect.className = 'residue-select'
             residueSelect.value = residueData[Object.keys(residueData)[r]][n]
-
-            deleteResidue(deleteIcon, residueData[Object.keys(residueData)[r]][n], viewer)
-
+            // deleteResidue(deleteIcon, residueData[Object.keys(residueData)[r]][n], viewer)
             const InnerDiv  =  document.createElement('div')
             InnerDiv.className = 'inner-div'
             InnerDiv.append(Inner_span)
@@ -353,10 +384,12 @@ function createDropdown(residueData, viewer){
 function drop_down_collapse(){
     document.querySelectorAll('.name').forEach( (e)=>{
         e.addEventListener('click', (e)=>{
-            if (e.target.parentElement.querySelector('.residue-dropdown').style.display !== 'block'){
-                e.target.parentElement.querySelector('.residue-dropdown').style.display = 'block'
-            } else{
-                 e.target.parentElement.querySelector('.residue-dropdown').style.display = 'none'
+            if(e.target.parentElement.querySelector('.residue-dropdown')){
+                if (e.target.parentElement.querySelector('.residue-dropdown').style.display !== 'block'){
+                    e.target.parentElement.querySelector('.residue-dropdown').style.display = 'block'
+                } else{
+                    e.target.parentElement.querySelector('.residue-dropdown').style.display = 'none'
+                }
             }
         })
     })
@@ -374,12 +407,12 @@ function clean_pdb(textdata){
     });
 
     return clean_lines.join('\n')
-  }
+}
 
-  function edit_text(text){
+function edit_text(text){
     edit.setValue('')
     edit.setValue(text)
-  }
+}
 
 function saveChanges(viewer) {
     document.querySelector('#save-changes').addEventListener('click', ()=>{
@@ -389,6 +422,7 @@ function saveChanges(viewer) {
         viewer.setStyle({ hetflag: true }, { stick: { colorscheme: 'greenCarbon' } });
         viewer.zoomTo(); 
         viewer.render(); 
+        
         chain_drop_down( get_chains(viewer.getModel().selectedAtoms({})), viewer)
         createDropdown(Retrieve_residues(viewer.pdbData()), viewer)
     })
@@ -415,6 +449,8 @@ function fetchPdbFile(database, pdbId){
         url =  `https://opm-assets.storage.googleapis.com/pdb/${pdbId.toLowerCase()}.pdb`
     }
 
+    console.log("OK")
+
     const fetchProtein = async (url, pdbId, viewer) => {
 
         try {
@@ -426,9 +462,8 @@ function fetchPdbFile(database, pdbId){
 
             const pdbData = await response.text();
             const clean_pdbdata = clean_pdb(pdbData)
-            ProteinVisualizer(pdbData)
-
-
+            console.log(clean_pdbdata)
+            ProteinVisualizer(NewView, pdbData)
         } catch (error) {
             console.error("Error fetching protein data:", error);
         }
@@ -458,32 +493,36 @@ function selectAllResidues() {
     })
 }
 
-function deleteSelectedChain(viewer) {
-    let chainList = {}
-    document.querySelector('#delete-selected').addEventListener('click', ()=>{
-        document.querySelector('.chain-dropdown').querySelectorAll('.chain-select').forEach((element)=>{
-            if(element.checked){
-                chainList[element.value] = element.parentElement
-            }
-        })
+// function deleteSelectedChain(viewer) {
 
-        if( Object.keys(chainList).length > 0){
-            Object.keys(chainList).forEach((chain)=>{
-                const allAtoms  = viewer.getModel().selectedAtoms({});
-                const filteredAtoms = allAtoms.filter(atom => atom.chain !== chain);
-                viewer.removeAllModels()
-                const newModel = viewer.addModel();
-                newModel.addAtoms(filteredAtoms );
-                NewView = viewer
-                NewView.zoomTo(); 
-                NewView.render(); 
-                chainList[chain].parentElement.remove()
-                editor.setValue('');
-                editor.setValue(viewer.pdbData())
-            })
-        }
-    })
-}
+//     let chainList = {}
+//     document.querySelector('#delete-selected').addEventListener('click', ()=>{
+//         console.log("OK")
+//         document.querySelector('.chain-dropdown').querySelectorAll('.chain-select').forEach((element)=>{
+//             if(element.checked){
+//                 chainList[element.value] = element.parentElement
+//             }
+//         })
+
+//         if( Object.keys(chainList).length > 0){
+//             Object.keys(chainList).forEach((chain)=>{
+
+//                 console.log(chain)
+//                 const allAtoms  = viewer.getModel().selectedAtoms({});
+//                 const filteredAtoms = allAtoms.filter(atom => atom.chain !== chain);
+//                 viewer.removeAllModels()
+//                 const newModel = viewer.addModel();
+//                 newModel.addAtoms(filteredAtoms );
+//                 // NewView = viewer
+//                 viewer.zoomTo(); 
+//                 viewer.render(); 
+//                 // element.parentElement.parentElement.remove()
+//                 editor.setValue('');
+//                 editor.setValue(viewer.pdbData())
+//             })
+//         }
+//     })
+// }
 
 function deleteSelectedResidue(viewer) {
 
@@ -511,18 +550,21 @@ function deleteSelectedResidue(viewer) {
     })
 }
 
-function loadFile() {
+function loadFile(viewer) {
     const input = document.querySelector('#file-input')
 
     input.addEventListener('change', (event) => {
-        console.log("OK")
+
         const file = event.target.files[0]; // Get the selected file
         if (file) {
             const reader = new FileReader();
 
             reader.onload = function (e) {
                 const fileData = e.target.result; // File content
-                ProteinVisualizer(fileData)
+
+
+                ProteinVisualizer(viewer, fileData)
+                input.value = ''
             };
 
             reader.onerror = function (e) {
@@ -536,7 +578,44 @@ function loadFile() {
     });
 }
 
+function saveFileToGalaxy() {
+
+    document.querySelector('#save-protein-to-galaxy').addEventListener('click', ()=>{
+        download_pdb(NewView)
+    })
+}
+
+
+function exitServer(){
+
+    var ext = document.querySelector('#exit-tool')
+
+    ext.addEventListener('click', ()=>{
+
+        $.ajax({
+            url: closs_server,
+            cache: false
+        }).done(function(data) {
+
+        })
+    })
+
+}
+
+
 document.addEventListener('DOMContentLoaded', function () {
-    loadFile()
-    loadPDBQuery()
+
+    let config = { backgroundColor: 'white' };
+    let element = document.querySelector('#container-01');
+
+    NewView =  $3Dmol.createViewer(element, config);
+
+    loadFile(NewView)
+    loadPDBQuery(NewView)
+
+    if (pdbData !==''){
+        ProteinVisualizer(NewView,  pdbData)
+    }
+
+    exitServer()
 })

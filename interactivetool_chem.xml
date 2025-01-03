@@ -13,50 +13,90 @@
     </entry_points>
     
     <command><![CDATA[
-
         #import re
-        ln -sf '$input' '/home/app/webapp/Chem/static/Chem/data/data.sdf' &&
-        python /home/app/webapp/manage.py runserver 0.0.0.0:8000 && 
-        cp '/home/app/webapp/Chem/static/Chem/out/mol/molecule.sdf' '$mol' && 
-        cp '/home/app/webapp/Chem/static/Chem/out/image/mol.png' '$image' 
+    
+        #if $viewer_type.viewer == "smallMol"
+            ln -sf "$viewer_type.dataset_type.input" "/home/app/webapp/Chem/static/Chem/data/data.sdf" &&
+            python /home/app/webapp/manage.py runserver 0.0.0.0:8000 &&
+            cp '/home/app/webapp/Chem/static/Chem/out/mol/molecule.sdf' '$mol' &&
+            cp '/home/app/webapp/Chem/static/Chem/out/image/mol.png' '$image'
+        #end if 
+    
+        #if $viewer_type.viewer == "protein"
+            #if "$viewer_type.inputData" 
+                ln -sf "$viewer_type.inputData" "/home/app/webapp/Chem/static/protein/data/data.pdb" 
+            #end if
 
-      ]]>
+            &&
+
+            python /home/app/webapp/manage.py runserver 0.0.0.0:8000 &&
+            cp "/home/app/webapp/Chem/static/protein/out/data.pdb" "$pdbFile"
+
+        #end if
+
+    ]]>
     </command>
     
     <inputs>
-        <conditional name="dataset_type">
-            <param name="mol_type" type="select" 
-                   label="Data type" 
-                   help="Select input data">
-                <option value="mol" selected="true">mol</option>
-                <option value="sdf">sdf</option>
-                <option value="mol2">mol2</option>
-                <option value="smi">smi</option>
+
+        <conditional name="viewer_type"> 
+
+            <param name="viewer" type="select" label="Data type" help="Select input data">
+                <option value="smallMol" selected="true">Small Molecule</option>
+                <option value="protein">Protein</option>
             </param>
-            
-            <when value="mol" >
-                <param name="input" type="data" format="mol" label="mole file" />
+
+            <when value="smallMol" >
+                <conditional name="dataset_type">
+                    <param name="mol_type" type="select" 
+                        label="Data type" 
+                        help="Select input data">
+                        <option value="mol" selected="true">mol</option>
+                        <option value="sdf">sdf</option>
+                        <option value="mol2">mol2</option>
+                        <option value="smi">smi</option>
+                    </param>
+                    
+                    <when value="mol" >
+                        <param name="input" type="data" format="mol" label="mole file" />
+                    </when>
+    
+                    <when value="mol2">
+                        <param name="input" type="data" format="mol2"   label="mol2 file" />
+                    </when>
+    
+                    <when value="sdf">
+                        <param name="input" type="data" format="sdf"  label="sdf file" />
+                    </when>
+    
+                    <when value="smi">
+                        <param name="input" type="data" format="text"  label="smi file" />
+                    </when>
+                </conditional>
+      
             </when>
 
-            <when value="mol2">
-                <param name="input" type="data" format="mol2" label="mol2 file" />
-            </when>
+            <when value="protein">
+                <param name="inputData" type="data" optional="true" format="pdb" label="PDB file" />
+            </when> 
 
-            <when value="sdf">
-                <param name="input" type="data" format="sdf" label="sdf file" />
-            </when>
-
-            <when value="smi">
-                <param name="input" type="data" format="text" label="smi file" />
-            </when>
 
         </conditional>
-
     </inputs>
     
     <outputs>
-        <data name="mol" format="sdf" label="Molecule"/>
-        <data name="image" format="png" label="png file"/>
+        <data name="mol" format="sdf" label="Molecule">
+            <filter>viewer_type['viewer'] == 'smallMol'</filter>
+        </data>
+
+        <data name="image" format="png" label="png file">
+            <filter>viewer_type['viewer'] == 'smallMol'</filter>
+        </data>
+
+        <data name="pdbFile" format="pdb" label="Protein Structure">
+            <filter>viewer_type['viewer'] == 'protein'</filter>
+        </data>
+
     </outputs>
     
     <tests>
@@ -75,3 +115,4 @@ This interactive tool allows user to edit and draw chemical structures.
         <citation type="doi">https://github.com/jaidevjoshi83/ChemDock</citation>
     </citations>
 </tool>
+

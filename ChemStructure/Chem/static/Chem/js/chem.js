@@ -260,13 +260,9 @@ ext.addEventListener('click', ()=>{
 
 
 document.querySelector('#protein-viewer-button').addEventListener('click', ()=>{
-    window.open('http://127.0.0.1:8000/protein_viewer', '_blank'); 
 
+    window.open(`protein_viewer`, '_blank'); 
     document.querySelector('#protein-viewer-button-list').style.display = 'block'
-
-    console.log("OK")
-
-
 })
 
 
